@@ -2,27 +2,24 @@ package lexer
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 )
 
-type token struct {
+type Token struct {
 	literal     string
 	name        string
 	line_number int
 }
 
-func Lex(path string) {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal("Error opening file", path)
-	}
+func Lex(f *os.File, retchan chan []*Token) {
 	defer f.Close()
 	rdr := bufio.NewReader(f)
 
 	line_number := 1
-	tokens := []*token{}
-	current_token := token{line_number: 1}
+	tokens := []*Token{}
+	current_token := Token{line_number: 1}
 
 	buffer := ""
 	is_symbolstring := false
@@ -94,25 +91,26 @@ func Lex(path string) {
 			buffer += string(r)
 		}
 	}
+	retchan <- tokens
 }
 
-func determine_token(*token) {
-	if token.literal[0] == "'" {
-		token.name = "char_lit"
+func determine_token(t *Token) {
+	if t.literal[0] == '\'' {
+		t.name = "char_lit"
 		return
 	}
-	name := is_number(token.literal)
+	name := is_number(t.literal)
 	if name != "" {
-		token.name = name
+		t.name = name
 		return
 	}
-	switch token.literal {
+	switch t.literal {
 	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct":
-		token.name = token.literal
+		t.name = t.literal
 	case "true", "false":
-		token.name = "bool_lit"
+		t.name = "bool_lit"
 	default:
-		token.name = "name"
+		t.name = "name"
 	}
 }
 
@@ -163,4 +161,17 @@ func is_digit(digit rune) bool {
 	default:
 		return false
 	}
+}
+
+func Print_tokens(tokens []*Token) {
+	current_line := 1
+	for _, pt := range tokens {
+		t := *pt
+		if t.line_number != current_line {
+			current_line = t.line_number
+			fmt.Print("\n", current_line, ": ")
+		}
+		fmt.Print(t.name, "{", t.literal, "}")
+	}
+	fmt.Println()
 }
