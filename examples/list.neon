@@ -1,0 +1,20 @@
+package list
+
+struct list {
+    val int 
+    next list
+}
+
+fn (l list) append (val int) {
+    end := l
+    for end.next != null{
+        end = l.next
+    }
+    next := list{val: val}
+    end.next = next
+} 
+
+fn (l list ) prepend (val int) list {
+    head := list{val: val, next: l}
+    return head
+}

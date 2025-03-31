@@ -107,7 +107,7 @@ func determine_token(*token) {
 		return
 	}
 	switch token.literal {
-	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go":
+	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct":
 		token.name = token.literal
 	case "true", "false":
 		token.name = "bool_lit"
