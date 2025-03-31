@@ -24,7 +24,6 @@ func Lex(path string) {
 	tokens := []*token{}
 	current_token := token{line_number: 1}
 
-
 	buffer := ""
 	is_symbolstring := false
 	is_string := false
@@ -117,14 +116,14 @@ func determine_token(*token) {
 	}
 }
 
-func can_conc_symbols (s1 rune, s2 string) bool {
+func can_conc_symbols(s1 rune, s2 string) bool {
 	switch string(s1) + s2 {
 	case "==", ">=", "<=", "||", "&&", "!=":
 		return true
 	default:
 		return false
 	}
-} 
+}
 
 func is_number(num string) string {
 	used_period := false
