@@ -36,7 +36,7 @@ func Lex(f *os.File, retchan chan []*Token) {
 		case is_string:
 			if r == '"' {
 				is_string = false
-				current_token.literal = buffer + string(r)
+				current_token.literal = buffer
 				current_token.name = "string_lit"
 				buffer = ""
 				continue
@@ -62,11 +62,13 @@ func Lex(f *os.File, retchan chan []*Token) {
 					current_token.literal = string(r) + buffer
 					current_token.name = string(r) + buffer
 					tokens = append(tokens, &current_token)
+					current_token = Token{line_number: line_number}
 					buffer = ""
 				} else {
 					current_token.literal = buffer
 					current_token.name = buffer
 					tokens = append(tokens, &current_token)
+					current_token = Token{line_number: line_number}
 					buffer = string(r)
 				}
 				continue
@@ -74,19 +76,38 @@ func Lex(f *os.File, retchan chan []*Token) {
 			fallthrough
 		case is_symbol(r):
 			is_symbolstring = true
+			if buffer != "" {
+				current_token.literal = buffer
+				buffer = ""
+				tokens = append(tokens, &current_token) 
+				go determine_token(&current_token)
+				current_token = Token{line_number: line_number}
+			}
 			buffer += string(r)
 		case r == '\r':
 			// Do nothing
 		case r == '\n':
 			line_number++
 			current_token.line_number = line_number
-		case r == '"':
-			is_string = true
-		case r == ' ':
+			if buffer == "" {
+				continue
+			}
 			current_token.literal = buffer
 			buffer = ""
 			tokens = append(tokens, &current_token)
 			go determine_token(&current_token)
+			current_token = Token{line_number: line_number}
+		case r == '"':
+			is_string = true
+		case r == ' ':
+			if buffer == "" {
+				continue
+			}
+			current_token.literal = buffer
+			buffer = ""
+			tokens = append(tokens, &current_token)
+			go determine_token(&current_token)
+			current_token = Token{line_number: line_number}
 		default:
 			buffer += string(r)
 		}
@@ -105,7 +126,7 @@ func determine_token(t *Token) {
 		return
 	}
 	switch t.literal {
-	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct":
+	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct", "package":
 		t.name = t.literal
 	case "true", "false":
 		t.name = "bool_lit"
