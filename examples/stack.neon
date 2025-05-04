@@ -1,0 +1,23 @@
+package stack
+
+struct stack {
+	val any
+	next stack
+}
+
+fn (s stack) pop () -> stack, any {
+	return s.next, s.val
+}
+
+fn (s stack) add(val any) -> stack {
+	new := stack{val: val, next stack}
+	return new
+}
+
+fn (s stack) peak() -> any {
+	return s.val
+}
+
+fn new(val any) -> stack {
+	return stack {val: val, next: null}
+}

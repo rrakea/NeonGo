@@ -19,14 +19,13 @@ func Lex(f *os.File, retchan chan []*Token) {
 
 	line_number := 1
 	tokens := []*Token{}
-	current_token := Token{line_number: 1}
-
 	buffer := ""
 	is_symbolstring := false
 	is_string := false
 	is_comment := false
 	is_multiline := false
-	multiline_buffer := ' '
+	multiline_escape := false
+
 	for {
 		r, _, err := rdr.ReadRune()
 		if err != nil {
@@ -36,57 +35,75 @@ func Lex(f *os.File, retchan chan []*Token) {
 		case is_string:
 			if r == '"' {
 				is_string = false
-				current_token.literal = buffer + string(r)
-				current_token.name = "string_lit"
+				tokens = append(tokens, &Token{buffer, "string_lit", line_number})
 				buffer = ""
-				continue
 			} else {
 				buffer += string(r)
 			}
 		case is_comment:
 			if r == '\n' {
-				is_comment = true
+				is_comment = false
 			}
-			continue
 		case is_multiline:
 			if r == '*' {
+				multiline_escape = true
 				continue
 			}
-			if r == '/' && multiline_buffer == '*' {
+			if r == '/' && multiline_escape {
 				is_multiline = false
-				continue
+				multiline_escape = false
 			}
+			multiline_escape = false
+		case r == '"':
+			is_string = true
 		case is_symbolstring:
 			if is_symbol(r) {
 				if can_conc_symbols(r, buffer) {
-					current_token.literal = string(r) + buffer
-					current_token.name = string(r) + buffer
-					tokens = append(tokens, &current_token)
+					tokens = append(tokens, &Token{buffer + string(r), buffer + string(r), line_number})
 					buffer = ""
+					is_symbolstring = false
 				} else {
-					current_token.literal = buffer
-					current_token.name = buffer
-					tokens = append(tokens, &current_token)
+					tokens = append(tokens, &Token{buffer, buffer, line_number})
 					buffer = string(r)
 				}
-				continue
+			} else {
+				tokens = append(tokens, &Token{buffer, buffer, line_number})
+				buffer = ""
+				is_symbolstring = false
+				// Need to emulate the rest of the switch:
+				switch {
+				case r == '\r':
+					//
+				case r == '\n':
+					line_number++
+				case r == ' ' || r == '\t':
+					//
+				default:
+					buffer = string(r)
+				}
 			}
-			fallthrough
 		case is_symbol(r):
+			if buffer != "" {
+				tokens = append(tokens, &Token{buffer, get_name(buffer), line_number})
+			}
 			is_symbolstring = true
-			buffer += string(r)
+			buffer = string(r)
 		case r == '\r':
 			// Do nothing
 		case r == '\n':
-			line_number++
-			current_token.line_number = line_number
-		case r == '"':
-			is_string = true
-		case r == ' ':
-			current_token.literal = buffer
+			if buffer == "" {
+				line_number++
+				continue
+			}
+			tokens = append(tokens, &Token{buffer, get_name(buffer), line_number})
 			buffer = ""
-			tokens = append(tokens, &current_token)
-			go determine_token(&current_token)
+			line_number++
+		case r == ' ' || r == '\t':
+			if buffer == "" {
+				continue
+			}
+			tokens = append(tokens, &Token{buffer, get_name(buffer), line_number})
+			buffer = ""
 		default:
 			buffer += string(r)
 		}
@@ -94,36 +111,34 @@ func Lex(f *os.File, retchan chan []*Token) {
 	retchan <- tokens
 }
 
-func determine_token(t *Token) {
-	if t.literal[0] == '\'' {
-		t.name = "char_lit"
-		return
+func get_name(name string) string {
+	if name[0] == '\'' {
+		return "char_lit"
 	}
-	name := is_number(t.literal)
-	if name != "" {
-		t.name = name
-		return
+	is_num, lit_string := is_number(name)
+	if is_num {
+		return lit_string
 	}
-	switch t.literal {
-	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct":
-		t.name = t.literal
+	switch name {
+	case "fn", "int", "bool", "char", "string", "return", "pub", "float", "map", "const", "if", "else", "for", "match", "case", "break", "continue", "defer", "go", "struct", "package":
+		return name
 	case "true", "false":
-		t.name = "bool_lit"
+		return "bool_lit"
 	default:
-		t.name = "name"
+		return "name"
 	}
 }
 
 func can_conc_symbols(s1 rune, s2 string) bool {
 	switch string(s1) + s2 {
-	case "==", ">=", "<=", "||", "&&", "!=":
+	case "==", ">=", "<=", "||", "&&", "!=", "->":
 		return true
 	default:
 		return false
 	}
 }
 
-func is_number(num string) string {
+func is_number(num string) (bool, string) {
 	used_period := false
 	for _, c := range num {
 		switch c {
@@ -135,19 +150,19 @@ func is_number(num string) string {
 			}
 			used_period = true
 		default:
-			return ""
+			return false, ""
 		}
 	}
 	if used_period {
-		return "double_lit"
+		return true, "double_lit"
 	} else {
-		return "int_lit"
+		return true, "int_lit"
 	}
 }
 
 func is_symbol(symbol rune) bool {
 	switch symbol {
-	case '/', '+', '-', '*', '.', '>', '<', '=', '(', ')', '!', '%', '&', '|', '[', ']', '{', '}', '~', ':':
+	case '/', ',', '+', '-', '*', '.', '>', '<', '=', '(', ')', '!', '%', '&', '|', '[', ']', '{', '}', '~', ':':
 		return true
 	default:
 		return false
@@ -164,14 +179,10 @@ func is_digit(digit rune) bool {
 }
 
 func Print_tokens(tokens []*Token) {
-	current_line := 1
+	fmt.Println("Amount:", len(tokens))
 	for _, pt := range tokens {
 		t := *pt
-		if t.line_number != current_line {
-			current_line = t.line_number
-			fmt.Print("\n", current_line, ": ")
-		}
-		fmt.Print(t.name, "{", t.literal, "}")
+		fmt.Println(t.name, "\""+t.literal+"\"")
 	}
 	fmt.Println()
 }

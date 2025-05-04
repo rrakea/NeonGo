@@ -2,9 +2,10 @@ package main
 
 import (
 	"log"
+	"os"
+
 	"neon/config"
 	"neon/lexer"
-	"os"
 
 	flag "github.com/spf13/pflag"
 )
@@ -50,9 +51,7 @@ func main() {
 		tokens[i] = append(tokens[i], pull...)
 	}
 	if config.Only_lex {
-		for _, t := range tokens {
-			lexer.Print_tokens(t)
-		}
+		lexer.Print_tokens(tokens[0])
 		return
 	}
 }
