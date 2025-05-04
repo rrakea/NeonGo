@@ -10,7 +10,7 @@ fn (s stack) pop () -> stack, any {
 }
 
 fn (s stack) add(val any) -> stack {
-	new := stack{val: val, next stack}
+	new := stack{val: val, next: f stack}
 	return new
 }
 
