@@ -14,15 +14,15 @@ func main() {
 	output := flag.StringP("output", "o", "out", "Specify the name of the output file")
 	release := flag.BoolP("release", "r", false, "Release build")
 	file := flag.StringP("file", "f", "", "Specify file to compile")
-	only_lex := flag.Bool("only_lexer", false, "Stop after lexing")
-	only_typecheck := flag.Bool("only_typecheck", false, "Stop after typechecking")
-	only_parse := flag.Bool("only_parse", false, "Stop after parsing")
+	lex := flag.Bool("lexer", false, "Print lex output")
+	parse := flag.Bool(" parse", false, "Print parse output")
+	typecheck := flag.Bool("typecheck", false, "Print typecheck output")
 
 	flag.Parse()
 	config.File_name = *output
-	config.Only_lex = *only_lex
-	config.Only_parse = *only_parse
-	config.Only_typecheck = *only_typecheck
+	config.print_lex = *lex
+	config.print_parse = *parse
+	config.print_typecheck = *typecheck
 	config.Release_build = *release
 	/*
 		currentDir, err := os.Getwd()
@@ -45,13 +45,15 @@ func main() {
 		}
 		go lexer.Lex(open_file, token_chan)
 	}
+
+	// Lex the files
 	for i := range len(files) {
 		tokens = append(tokens, []*lexer.Token{})
 		pull := <-token_chan
 		tokens[i] = append(tokens[i], pull...)
 	}
+
 	if config.Only_lex {
 		lexer.Print_tokens(tokens[0])
-		return
 	}
 }
