@@ -2,16 +2,10 @@ package parser
 
 type ast struct {
 	children *[]*ast
-	val *ast_node
+	val      *ast_node
 }
 
-type ast_node struct {
-
-}
-
-func Parse() *ast{
-	return &ast{}
-}
+type ast_node struct{}
 
 func (t *ast) Get_child(name string) *ast {
 	return &ast{}

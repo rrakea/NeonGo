@@ -14,7 +14,6 @@ type Rule struct {
 func Get_Grammar() *Grammar {
 	gr := Grammar{}
 	rules := []Rule{}
-	gr.rules = rules
 	g := grammar_string()
 	buf := ""
 	left := ""
@@ -24,8 +23,10 @@ func Get_Grammar() *Grammar {
 		case ' ':
 			if left == "" {
 				left = buf
+				buf = ""
 			} else {
 				right = append(right, buf)
+				buf = ""
 			}
 		case '\n':
 			if left != "" {
@@ -40,37 +41,39 @@ func Get_Grammar() *Grammar {
 			buf += string(r)
 		}
 	}
+	gr.rules = rules
 	return &gr
 }
 
 func grammar_string() string {
 	// The first word is the left side
 	// When a rule only has one word it is an epsilon rule
+
+	// TODO: Interfaces, string[]{}
 	s := "" +
 		"S PACKAGE CODE\n" +
-		"CODE FNBLOCK\n" +
-		"CODE STRUCT\n" +
-		"CODE ENUM\n" +
-		"CODE INTERFACE\n" +
+		"CODE FN CODE\n" +
+		"CODE STRUCT CODE\n" +
+		"CODE ENUM CODE\n" +
+		"CODE\n" +
+		//"CODE INTERFACE\n" +
 
 		"PACKAGE package name\n" +
-		"FNBLOCK FN FNBLOCK\n" +
-		"FNBLOCK\n" +
 
 		// Function Declaration
-		"VIS FN fn RECIEVER name ( ARGS ) RET BLOCK\n" +
+		"FN VIS fn RECIEVER name ( ARGS ) RET BLOCK\n" +
 		"VIS pub\n" +
 		"VIS\n" +
 		"RECIEVER ( name TYPE )\n" +
 		"RECIEVER\n" +
-		"RET -> RETLIST\n" +
+		"RET -> TYPE RETLIST QUESTION\n" +
 		"RET\n" +
 		"RETLIST , TYPE RETLIST\n" +
-		"RETLIST TYPE\n" +
-		"RETLIST ?\n" +
+		"QUESTION ?\n" +
+		"QUESTION\n" +
 		"ARGS ARG ARGLIST\n" +
 		"ARG name TYPE\n" +
-		"ARGLIST , ARG ARGLIST" +
+		"ARGLIST , ARG ARGLIST\n" +
 		"ARGLIST\n" +
 		"ARGS\n" +
 
@@ -100,19 +103,19 @@ func grammar_string() string {
 
 		"IF if EXPRESSION BLOCK ELSE\n" +
 		"ELSE else if EXPRESSION BLOCK ELSE\n" +
-		"ELSE else EXPRESSION BLOCK\n" +
+		"ELSE else BLOCK\n" +
 
-		"RETURN EXRESSION\n" +
-		"RETURN\n" +
+		"RETURN return EXRESSION\n" +
+		"RETURN return\n" +
 
 		"ERROR error EXPRESSION\n" +
 
 		"CHECK check name BLOCK\n" +
 
 		"VARDEC name := EXPRESSION\n" +
+		"VARDEC TYPE name\n" +
 
 		"VARASSIGN name EQUALS EXPRESSION\n" +
-		"VARASSIGN TYPE name\n" +
 
 		"EQUALS =\n" +
 		"EQUALS +=\n" +
@@ -120,7 +123,7 @@ func grammar_string() string {
 		"EQUALS *=\n" +
 		"EQUALS /=\n" +
 
-		"FOR FORCOND BLOCK\n" +
+		"FOR for FORCOND BLOCK\n" +
 		"FORCOND\n" + // for {}
 		"FORCOND ~ EXPRESSION\n" + // for ~ len(a) {}
 		"FORCOND name ~ EXPRESSION\n" + // for i ~ len(a) {}
@@ -158,6 +161,7 @@ func grammar_string() string {
 		"TYPE float\n" +
 		"TYPE char\n" +
 		"TYPE any\n" +
+		"TYPE name\n" +
 
 		"ARRAYTYPE TYPE [ EXPRESSION ]\n" +
 
@@ -175,7 +179,7 @@ func grammar_string() string {
 		// op7:
 		"EXPRESSION EX1 op1 EX2\n" +
 		"EXPRESSION EX2\n" +
-		"EX2 op2 EX3\n" +
+		"EX2 EX2 op2 EX3\n" +
 		"EX2 EX3\n" +
 		"EX3 EX3 op3 EX4\n" +
 		"EX3 EX4\n" +
@@ -204,12 +208,28 @@ func grammar_string() string {
 }
 
 func (g *Grammar) PrintGrammar() {
-	fmt.Println("Amount Rules:", len(g.rules))
+	grmap := map[string][][]string{}
+	grorder := []string{}
 	for _, r := range g.rules {
-		right := ""
-		for _, ri := range r.right {
-			right += ri + " "
+		if len(grmap[r.left]) == 0 {
+			grorder = append(grorder, r.left)
 		}
-		fmt.Println(r.left, "->", right)
+		grmap[r.left] = append(grmap[r.left], r.right)
+	}
+	fmt.Println("Amount Rules:", len(grorder))
+	for _, left := range grorder {
+		right := ""
+		for _, rs := range grmap[left] {
+			if len(rs) == 0 {
+				right += " e |"
+			} else {
+				for _, r := range rs {
+					right += " " + r
+				}
+				right += " |"
+			}
+		}
+		fmt.Println(left, "->", right[:len(right)-1])
+
 	}
 }

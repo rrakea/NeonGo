@@ -4,10 +4,11 @@ import (
 	"log"
 	"os"
 
+	flag "github.com/spf13/pflag"
+
 	"neon/src/frontend/config"
 	"neon/src/frontend/lexer"
-
-	flag "github.com/spf13/pflag"
+	"neon/src/frontend/parser"
 )
 
 func Launch() {
@@ -17,6 +18,7 @@ func Launch() {
 	lex := flag.Bool("lex", false, "Print lex output")
 	parse := flag.Bool(" parse", false, "Print parse output")
 	typecheck := flag.Bool("typecheck", false, "Print typecheck output")
+	rules := flag.Bool("rules", false, "Print grammar rules")
 
 	flag.Parse()
 	config.File_name = *output
@@ -55,5 +57,9 @@ func Launch() {
 
 	if config.Print_lex {
 		lexer.Print_tokens(tokens[0])
+	}
+
+	if *rules {
+		parser.Get_Grammar().PrintGrammar()
 	}
 }

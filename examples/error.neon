@@ -19,3 +19,5 @@ fn error_check () {
 	// res is now an int
 	c := res + 1
 }
+
+fn tmp () -> float, string ? {}
