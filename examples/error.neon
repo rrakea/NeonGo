@@ -1,0 +1,21 @@
+package error
+
+fn safe_div (int a, int b) -> float? {
+	if b == 0 {
+		error "Div by 0"
+	}
+	return a / b
+}
+
+fn error_check () {
+	a := 10
+	b := 0
+	res := safe_div(a,b)
+	// res is an option type
+	check res{
+		print("Unlucky")
+		panic(error)
+	}
+	// res is now an int
+	c := res + 1
+}

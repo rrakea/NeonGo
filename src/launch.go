@@ -1,28 +1,28 @@
-package main
+package src
 
 import (
 	"log"
 	"os"
 
-	"neon/config"
-	"neon/lexer"
+	"neon/src/frontend/config"
+	"neon/src/frontend/lexer"
 
 	flag "github.com/spf13/pflag"
 )
 
-func main() {
+func Launch() {
 	output := flag.StringP("output", "o", "out", "Specify the name of the output file")
 	release := flag.BoolP("release", "r", false, "Release build")
 	file := flag.StringP("file", "f", "", "Specify file to compile")
-	lex := flag.Bool("lexer", false, "Print lex output")
+	lex := flag.Bool("lex", false, "Print lex output")
 	parse := flag.Bool(" parse", false, "Print parse output")
 	typecheck := flag.Bool("typecheck", false, "Print typecheck output")
 
 	flag.Parse()
 	config.File_name = *output
-	config.print_lex = *lex
-	config.print_parse = *parse
-	config.print_typecheck = *typecheck
+	config.Print_lex = *lex
+	config.Print_parse = *parse
+	config.Print_typecheck = *typecheck
 	config.Release_build = *release
 	/*
 		currentDir, err := os.Getwd()
@@ -53,7 +53,7 @@ func main() {
 		tokens[i] = append(tokens[i], pull...)
 	}
 
-	if config.Only_lex {
+	if config.Print_lex {
 		lexer.Print_tokens(tokens[0])
 	}
 }
